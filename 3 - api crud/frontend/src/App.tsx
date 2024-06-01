@@ -1,73 +1,84 @@
 // FILE: App.tsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-interface Todo {
-    id: string;
+interface ToDoItem {
+    id: number;
     title: string;
     description: string;
     completed: boolean;
 }
 
-function App() {
-    const [todos, setTodos] = useState<Todo[]>([]);
+const App: React.FC = () => {
+    const [todos, setTodos] = useState<ToDoItem[]>([]);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
     useEffect(() => {
-        axios.get("/todos/").then((response) => {
+        const fetchTodos = async () => {
+            const response = await axios.get<ToDoItem[]>(
+                "http://localhost:8000/todos/"
+            );
             setTodos(response.data);
-        });
+        };
+
+        fetchTodos();
     }, []);
 
-    const addTodo = () => {
-        axios.post("/todos/", { title, description }).then((response) => {
-            setTodos([...todos, response.data]);
-        });
-    };
+    const createTodo = async (event: React.FormEvent) => {
+        event.preventDefault();
 
-    const deleteTodo = (id: string) => {
-        axios.delete(`/todos/${id}`).then(() => {
-            setTodos(todos.filter((todo) => todo.id !== id));
-        });
+        const response = await axios.post<ToDoItem>(
+            "http://localhost:8000/todos/",
+            {
+                title,
+                description,
+                completed: false,
+            }
+        );
+
+        setTodos([...todos, response.data]);
+        setTitle("");
+        setDescription("");
     };
 
     return (
-        <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md flex items-center space-x-4">
-            <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-            />
-            <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description"
-            />
-            <button
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                onClick={addTodo}
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+            <form
+                onSubmit={createTodo}
+                className="mb-4 flex flex-col items-center"
             >
-                Add Todo
-            </button>
-            <ul>
+                <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Title"
+                    className="p-2 border mb-2 w-64"
+                />
+                <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Description"
+                    className="p-2 border mb-2 w-64"
+                />
+                <button
+                    type="submit"
+                    className="p-2 bg-blue-500 text-white w-64"
+                >
+                    Create
+                </button>
+            </form>
+            <div className="flex flex-col items-center">
                 {todos.map((todo) => (
-                    <li key={todo.id} className="mt-4">
-                        <h2 className="font-bold text-xl">{todo.title}</h2>
-                        <p className="text-gray-700">{todo.description}</p>
-                        <button
-                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-2"
-                            onClick={() => deleteTodo(todo.id)}
-                        >
-                            Delete
-                        </button>
-                    </li>
+                    <div key={todo.id} className="mb-2 p-2 border w-64">
+                        <h2 className="font-bold">{todo.title}</h2>
+                        <p>{todo.description}</p>
+                    </div>
                 ))}
-            </ul>
+            </div>
         </div>
     );
-}
+};
 
 export default App;
